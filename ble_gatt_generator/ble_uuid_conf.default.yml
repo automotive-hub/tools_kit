@@ -24,3 +24,5 @@ gatt_profile:
   # BATTERY SERVICE
   - BLE_SERVICE_BATTERY: "180F"
   - BLE_CHARACTERISTIC_BATTERY_LEVEL: "2A19"
+device_info:
+  device_name: "ESP32-OBD2-BLE"
