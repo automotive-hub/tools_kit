@@ -6,7 +6,7 @@ pathTOHeaderFile = "./c/BLE_DESIGN.g.h"
 # pathToSerialDebugTool = "./c/BLE_DESIGN.g.h"
 pathToDartFile = "./dart/ble_desgin_constants.g.dart"
 
-deviceName = "esp32-gateway"
+deviceName = "esp32"
 
 
 def read_config():
@@ -14,6 +14,8 @@ def read_config():
         data = yaml.load(f, Loader=yaml.FullLoader)
         # yaml.load()
         # return list of key and value pair
+        global deviceName
+        deviceName = data["device_info"]["device_name"]
         return(data["gatt_profile"])
 
 
@@ -57,6 +59,9 @@ def generate(fileGenrateCallback, fileLocation):
     f = open(fileLocation, 'w+')
     f.write(text)
     f.close()
+
+
+# def gattUUIDTextMapper():
 
 
 def run():
