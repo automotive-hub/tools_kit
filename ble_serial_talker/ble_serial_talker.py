@@ -1,5 +1,6 @@
 #! /usr/local/bin/python3
 import os
+from pickle import FALSE
 import serial
 import time
 import random
@@ -28,83 +29,69 @@ def getUUID():
     return uuid.uuid4().hex[0:totalByte]
 
 
-def proximity_emulator():
+def emulator(pid_id, data):
     global text
-    key = 1
-    num = random.randrange(10, 20)
+    key = pid_id
+    if data == None:
+        num = random.randrange(1500, 2000)
+    else:
+        num = data
     formatedText = '''{key}:{counter}'''.format(key=key, counter=num)
     text = formatedText
 
 
-def thermometer_emulator():
-    global text
-    key = 2
-    num = random.randrange(33, 40)
-    formatedText = '''{key}:{counter}'''.format(
-        key=key, counter=float(num)+0.1)
-    text = formatedText
+def runner():
+    print(text)
+    time.sleep(0.2)
+    arduino.write(bytes(text, 'utf-8'))
+    time.sleep(0.5)
 
 
-def rfid_emulator():
-    global text
-    key = 4
-    num = getUUID()
-    formatedText = '''{key}:{counter}'''.format(key=key, counter=num)
-    text = formatedText
+obd_pids = {
+    "CALCULATED_ENGINE_LOAD": 4,
+    "ENGINE_COOLANT_TEMPERATURE": 5,
+    "ENGINE_RPM": 12,
+    "VEHICLE_SPEED": 13,
+    "AIR_INTAKE_TEMPERATURE": 15,
+    "DISTANCE_TRAVELED_WITH_MIL_ON": 33,
+    "DISTANCE_TRAVELED_SINCE_CODES_CLEARED": 49,
+    "ENGINE_OIL_TEMPERATURE": 92,
+    "TIME_SINCE_TROUBLE_CODES_CLEARED": 78,
+}
 
 
-def radar_emulator():
-    global text
-    key = 3
-    num = random.randrange(0, 1)
-    formatedText = '''{key}:{counter}'''.format(key=key, counter=num)
-    text = formatedText
+sensor_table_v2 = {v: k for k, v in obd_pids.items()}
 
 
-def runner(callbackList):
-    # callback List as *_emulator() function
-    for callback in callbackList:
-        callback()
-        arduino.write(bytes(text, 'utf-8'))
-        time.sleep(0.5)
-
-
-def suite_normal():
-    runner([
-        proximity_emulator, thermometer_emulator, rfid_emulator,
-    ])
-
-
-def text_to_sensor(text):
-    if text == "2":
-        return thermometer_emulator
-    if text == "3":
-        return radar_emulator
-    if text == "1":
-        return proximity_emulator
-    if text == "4":
-        return rfid_emulator
-    return ""
-
-
-sensor_table = [["1:", "setEngineSpeedMeter"], ["2:", "setEngineRPM"], [
-    "3:", "setEngineLoad"], ["69:", "setGeneric"]]
+def keyNotNull(textInput):
+    return (textInput != "") and (sensor_table_v2.get(int(textInput)) != None)
 
 
 while 1:
     print("Type in sensor number to emulate over ble")
     print("-----------")
-    for i in sensor_table:
-        print('\t'.join(i))
+    for pid_key in sensor_table_v2:
+        pid_value = sensor_table_v2[pid_key]
+        formattedString = '''[{key}] \t : {value}'''.format(
+            key=pid_key, value=pid_value)
+        print(formattedString)
     print("-----------")
-    sensorType = input("type in number : ")
-    if sensorType != "":
-        runner([text_to_sensor(sensorType)])
-    else:
-        print("Wrong format")
-        time.sleep(1.5)
+    textInput = input("type in number : ")
+    isMode1 = ":" in textInput
+    if isMode1:
+        pid_id = textInput.split(":")[0]
+        data = textInput.split(":")[1]
+        if keyNotNull(pid_id):
+            emulator(pid_id, data)
+            runner()
+        else:
+            print("Wrong format")
+            time.sleep(1.5)
+    if isMode1 == False:
+        if keyNotNull(textInput):
+            emulator(textInput, None)
+            runner()
+        else:
+            print("Wrong format")
+            time.sleep(1.5)
     clear()
-    # if text == "":
-    #     runner(
-    #         [proximity_emulator, thermometer_emulator]
-    #     )
